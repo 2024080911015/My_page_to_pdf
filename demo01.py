@@ -47,30 +47,35 @@ async def get_favorite_pages(url:str):
         await page.goto(url,wait_until="networkidle",timeout=60000)
         await page.wait_for_timeout(3000)
         last_height=await page.evaluate("document.body.scrollHeight")
-        while True:
-            await page.evaluate("window.scrollTo(0,document.body.scrollHeight)")
-            await page.wait_for_timeout(3000)
-            new_height=await page.evaluate("document.body.scrollHeight")
-            if new_height ==last_height:
-                break
-            last_height=new_height
-        link_locators=page.locator("h2.ContentItem-title a")
-        count =await link_locators.count()
-        if count==0:
-            print("c错误")
         all_links=[]
-        for i in range(count):
-            locator=link_locators.nth(i)
-            title=await locator.inner_text()
-            links=await locator.get_attribute("href")
-            if links.startswith("//"):
-                links="https:"+links
-            all_links.append({"title":title,"links":links})
+        while True:
+            while True:
+                last_height=await page.evaluate("document.body.scrollHeight")
+                await page.evaluate("window.scrollTo(0,document.body.scrollHeight)")
+                await page.wait_for_timeout(3000)
+                new_height=await page.evaluate("document.body.scrollHeight")
+                if new_height==last_height:
+                    break
+            link_locators =  page.locator("h2.ContentItem-title a")
+            count = await link_locators.count()
+            if count == 0:
+                print("c错误")
+            for i in range(count):
+                locator = link_locators.nth(i)
+                title = await locator.inner_text()
+                links = await locator.get_attribute("href")
+                if links.startswith("//"):
+                    links = "https:" + links
+                all_links.append({"title": title, "links": links})
+            new_button_locator= page.locator("button.PaginationButton-next")
+            if await new_button_locator.count()==0 or await  new_button_locator.is_disabled():
+                break
+            await new_button_locator.click()
         return all_links
 
 async def main():
     time=os.times()
-    url="https://www.zhihu.com/collection/967495634"
+    url="https://www.zhihu.com/collection/971182861"
     all_links=await get_favorite_pages(url)
     for i,item in enumerate(all_links):
         title=item["title"]
